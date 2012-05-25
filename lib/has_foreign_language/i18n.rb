@@ -8,28 +8,38 @@ module HasForeignLanguage
   module ClassMethods
 
     def has_foreign_language(*args)
+
+      eigenclass = class << self
+        self
+      end
+
+      # Define has_column? in eigenclass
+      eigenclass.class_eval do
+        define_method("has_column?") do |column|
+          self.class.columns.map(&:name).include? column
+        end
+      end
+
+
       args.each do |field|
                 
         # Define the marker
-        eigenclass = class << self
-          self
-        end
         eigenclass.class_eval do
           define_method("has_foreign_language_#{field.to_s}?") { true }            
         end
 
         # Define the getter
         define_method(field.to_s) do
-          if self.class.columns.select {|c| c.name == "#{field}_#{I18n.locale}"}.length > 0
+          if self.class.has_column?("#{field}_#{I18n.locale}") || self.class.has_column?("#{field}_#{I18n.locale}_file_name")
             self.send("#{field}_#{I18n.locale}".to_sym)
           else
-            super()
+            super
           end
         end
 
         # Define the setter
         define_method("#{field}=") do |val|
-          if self.class.columns.select {|c| c.name == "#{field}_#{I18n.locale}"}.length > 0
+          if self.class.has_column?("#{field}_#{I18n.locale}") || self.class.has_column?("#{field}_#{I18n.locale}_file_name")
             self["#{field}_#{I18n.locale}".to_sym] = val
           else
             self[field.to_sym] = val
