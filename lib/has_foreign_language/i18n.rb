@@ -33,11 +33,12 @@ module HasForeignLanguage
 
           if self.class.has_column?("#{field}_#{I18n.locale}")
             self["#{field}_#{I18n.locale}".to_sym]  
-          #if paperclip field
           elsif self.class.has_column?("#{field}_#{I18n.locale}_file_name")
-            self.send("#{field}_#{I18n.locale}".to_sym)
+            self.attachment_for "#{field}_#{I18n.locale}".to_sym
+          elsif self.class.has_column?("#{field}_file_name")
+            self.attachment_for "#{field}".to_sym
           else
-            self["#{field}".to_sym]
+            super()
           end
 
         end
@@ -50,6 +51,8 @@ module HasForeignLanguage
           #if paperclip field
           elsif self.class.has_column?("#{field}_#{I18n.locale}_file_name")
             self.send("#{field}_#{I18n.locale}".to_sym, val)
+          elsif self.class.has_column?("#{field}_file_name")
+            self.send("#{field}".to_sym, val)
           else
             self[field.to_sym] = val
           end
@@ -58,20 +61,24 @@ module HasForeignLanguage
         
         # Define the getter for default_locale
         define_method("#{field}_#{I18n.default_locale}") do
+
           if self.class.has_column?("#{field}_#{I18n.locale}_file_name")
             self.send(field.to_sym)
           else
             self[field.to_sym]
           end
+
         end
 
         # Define the setter for default_locale
         define_method("#{field}_#{I18n.default_locale}=") do |val|
+
           if self.class.has_column?("#{field}_#{I18n.locale}_file_name")
             self.send(field.to_sym, val)
           else
             self[field.to_sym] = val
           end
+          
         end
         
       end
