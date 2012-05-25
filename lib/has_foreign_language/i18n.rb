@@ -16,7 +16,7 @@ module HasForeignLanguage
       # Define has_column? in eigenclass
       eigenclass.class_eval do
         define_method("has_column?") do |column|
-          self.class.columns.map(&:name).include? column
+          self.columns.map(&:name).include? column.to_s
         end
       end
 
@@ -30,31 +30,48 @@ module HasForeignLanguage
 
         # Define the getter
         define_method(field.to_s) do
-          if self.class.has_column?("#{field}_#{I18n.locale}") || self.class.has_column?("#{field}_#{I18n.locale}_file_name")
+
+          if self.class.has_column?("#{field}_#{I18n.locale}")
+            self["#{field}_#{I18n.locale}".to_sym]  
+          #if paperclip field
+          elsif self.class.has_column?("#{field}_#{I18n.locale}_file_name")
             self.send("#{field}_#{I18n.locale}".to_sym)
           else
-            super
+            self["#{field}".to_sym]
           end
+
         end
 
         # Define the setter
         define_method("#{field}=") do |val|
-          if self.class.has_column?("#{field}_#{I18n.locale}") || self.class.has_column?("#{field}_#{I18n.locale}_file_name")
+          
+          if self.class.has_column?("#{field}_#{I18n.locale}")
             self["#{field}_#{I18n.locale}".to_sym] = val
+          #if paperclip field
+          elsif self.class.has_column?("#{field}_#{I18n.locale}_file_name")
+            self.send("#{field}_#{I18n.locale}".to_sym, val)
           else
             self[field.to_sym] = val
           end
+
         end
-
-
+        
         # Define the getter for default_locale
         define_method("#{field}_#{I18n.default_locale}") do
-          self[field.to_sym]
+          if self.class.has_column?("#{field}_#{I18n.locale}_file_name")
+            self.send(field.to_sym)
+          else
+            self[field.to_sym]
+          end
         end
 
         # Define the setter for default_locale
         define_method("#{field}_#{I18n.default_locale}=") do |val|
-          self[field.to_sym] = val
+          if self.class.has_column?("#{field}_#{I18n.locale}_file_name")
+            self.send(field.to_sym, val)
+          else
+            self[field.to_sym] = val
+          end
         end
         
       end
